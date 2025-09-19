@@ -131,7 +131,7 @@ require __DIR__.'/../partials/layout_nav.php';
           name="role" id="roleSel"
           class="mt-2 w-full rounded-lg border border-slate-300 bg-white shadow-sm px-3 h-10 focus:outline-none focus:ring-2 focus:ring-slate-400"
         >
-          <?php foreach (['ADMIN','HR','EMPLOYEE'] as $r): ?>
+          <?php foreach (['EMPLOYEE'] as $r): ?>
             <option <?= $uRow['role']===$r ? 'selected' : '' ?>><?= $r ?></option>
           <?php endforeach; ?>
         </select>
@@ -151,7 +151,7 @@ require __DIR__.'/../partials/layout_nav.php';
     </div>
 
     <div class="flex justify-end gap-2">
-      <a href="/sems/public/admin/users.php" class="px-4 h-10 rounded-lg border grid place-items-center">Cancel</a>
+      <a href="/sems/public/hr/users.php" class="px-4 h-10 rounded-lg border grid place-items-center">Cancel</a>
       <button class="px-4 h-10 rounded-lg bg-charcoal text-white">Save</button>
     </div>
   </form>

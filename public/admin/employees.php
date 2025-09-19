@@ -1,5 +1,5 @@
 <?php
-require __DIR__.'/../partials/auth.php'; require_role(['ADMIN']);
+require __DIR__.'/../partials/auth.php'; require_role(['ADMIN','HR']);
 $page_title='Employees';
 require __DIR__.'/../partials/layout_head.php';
 require __DIR__.'/../partials/layout_nav.php';

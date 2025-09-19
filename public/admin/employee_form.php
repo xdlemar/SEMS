@@ -1,5 +1,5 @@
 <?php
-require __DIR__.'/../partials/auth.php'; require_role(['ADMIN']);
+require __DIR__.'/../partials/auth.php'; require_role(['ADMIN','HR']);
 $id=(int)($_GET['id']??0); $isEdit=$id>0;
 
 /** Generate a random, human-friendly unique Emp #. */

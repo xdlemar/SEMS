@@ -2,61 +2,55 @@
 require __DIR__.'/../partials/auth.php'; require_role(['ADMIN','HR']);
 require __DIR__.'/../app/partials/csrf.php';
 
-$msg = '';
-$ok  = false;
+$msg=''; $ok=false;
 
-// Employees WITHOUT an active card
+// Employees WITH an active card
 $emps = $db->query("
-  SELECT e.id, e.emp_no, CONCAT(e.fname,' ',e.lname) AS name
+  SELECT e.id, e.emp_no, CONCAT(e.fname,' ',e.lname) AS name, c.uid_hex
   FROM employees e
+  JOIN rfid_cards c ON c.employee_id=e.id AND c.active=1
   WHERE e.active=1
-    AND NOT EXISTS (
-      SELECT 1 FROM rfid_cards c
-      WHERE c.employee_id=e.id AND c.active=1
-    )
   ORDER BY name
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-if ($_SERVER['REQUEST_METHOD']==='POST') {
+if ($_SERVER['REQUEST_METHOD']==='POST'){
   csrf_check();
-  $emp_id = (int)($_POST['emp_id'] ?? 0);
-  $uid    = strtoupper(trim($_POST['uid'] ?? ''));
+  $emp_id=(int)($_POST['emp_id']??0);
+  $new   = strtoupper(trim($_POST['new_uid']??''));
 
-  if (!$emp_id || $uid==='') {
-    $msg = 'Please select an employee and provide a UID.'; 
-  } elseif (!preg_match('/^[0-9A-F]+$/', $uid)) {
-    $msg = 'UID must be HEX (0-9, A-F).';
-  } else {
-    // ensure employee still has no active card
-    $chk = $db->prepare("SELECT 1 FROM rfid_cards WHERE employee_id=? AND active=1 LIMIT 1");
-    $chk->execute([$emp_id]);
-    if ($chk->fetch()) {
-      $msg = 'This employee already has an active card.';
-    } else {
-      // ensure UID unused
-      $du = $db->prepare("SELECT 1 FROM rfid_cards WHERE uid_hex=? AND active=1 LIMIT 1");
-      $du->execute([$uid]);
-      if ($du->fetch()) {
-        $msg = 'This UID is already registered to another employee.';
-      } else {
-        $ins = $db->prepare("INSERT INTO rfid_cards (employee_id, uid_hex, active, created_at) VALUES (?,?,1,NOW())");
-        $ins->execute([$emp_id, $uid]);
-        $ok  = true;
-        $msg = 'Card bound successfully.';
-        // refresh employees dropdown (the chosen one disappears)
-        $emps = $db->query("
-          SELECT e.id, e.emp_no, CONCAT(e.fname,' ',e.lname) AS name
-          FROM employees e
-          WHERE e.active=1
-            AND NOT EXISTS (SELECT 1 FROM rfid_cards c WHERE c.employee_id=e.id AND c.active=1)
-          ORDER BY name
-        ")->fetchAll(PDO::FETCH_ASSOC);
-      }
+  if(!$emp_id || $new===''){ $msg='Select employee and enter new UID.'; }
+  elseif(!preg_match('/^[0-9A-F]+$/',$new)){ $msg='UID must be HEX (0-9, A-F).'; }
+  else{
+    $db->beginTransaction();
+    try{
+      // make sure new UID not in use
+      $du=$db->prepare("SELECT 1 FROM rfid_cards WHERE uid_hex=? AND active=1 LIMIT 1");
+      $du->execute([$new]);
+      if($du->fetch()){ throw new Exception('New UID is already registered.'); }
+
+      // deactivate current
+      $db->prepare("UPDATE rfid_cards SET active=0 WHERE employee_id=? AND active=1")->execute([$emp_id]);
+
+      // insert new
+      $db->prepare("INSERT INTO rfid_cards (employee_id, uid_hex, active, created_at) VALUES (?,?,1,NOW())")
+         ->execute([$emp_id,$new]);
+
+      $db->commit(); $ok=true; $msg='Card replaced successfully.';
+      // refresh list
+      $emps = $db->query("
+        SELECT e.id, e.emp_no, CONCAT(e.fname,' ',e.lname) AS name, c.uid_hex
+        FROM employees e
+        JOIN rfid_cards c ON c.employee_id=e.id AND c.active=1
+        WHERE e.active=1
+        ORDER BY name
+      ")->fetchAll(PDO::FETCH_ASSOC);
+    }catch(Exception $ex){
+      $db->rollBack(); $msg='Error: '.$ex->getMessage();
     }
   }
 }
 
-$page_title='Register RFID Card';
+$page_title='Change RFID Card';
 require __DIR__.'/../partials/layout_head.php';
 require __DIR__.'/../partials/layout_nav.php';
 ?>
@@ -70,7 +64,7 @@ require __DIR__.'/../partials/layout_nav.php';
 
     <div class="bg-white rounded-xl shadow-soft border p-6">
       <div class="text-lg font-semibold flex items-center gap-2 mb-4">
-        <span class="material-symbols-outlined">credit_card</span> Register RFID Card
+        <span class="material-symbols-outlined">swap_horiz</span> Change RFID Card
       </div>
 
       <div class="grid md:grid-cols-2 gap-6">
@@ -78,25 +72,25 @@ require __DIR__.'/../partials/layout_nav.php';
         <form method="post" class="space-y-4">
           <input type="hidden" name="csrf" value="<?=htmlspecialchars(csrf_token())?>">
           <div>
-            <label class="text-sm">Employee (no active card)</label>
-            <select name="emp_id" required class="mt-2 w-full rounded-lg border-slate-300">
+            <label class="text-sm">Employee (with active card)</label>
+            <select id="emp" name="emp_id" required class="mt-2 w-full rounded-lg border-slate-300">
               <option value="">Select…</option>
               <?php foreach($emps as $e): ?>
-                <option value="<?=$e['id']?>"><?=htmlspecialchars($e['emp_no'].' · '.$e['name'])?></option>
+                <option value="<?=$e['id']?>" data-cur="<?=htmlspecialchars($e['uid_hex'])?>">
+                  <?=htmlspecialchars($e['emp_no'].' · '.$e['name'])?>
+                </option>
               <?php endforeach; ?>
             </select>
+            <div class="text-xs opacity-70 mt-1">Current UID: <span id="curUID" class="font-mono">—</span></div>
           </div>
 
           <div>
-            <label class="text-sm flex items-center gap-2">
-              UID (auto-fills when you tap an unregistered card)
-            </label>
-            <input id="uid" name="uid"  class="mt-2 w-full rounded-lg border-slate-300 uppercase" required>
-            
+            <label class="text-sm">New UID (tap an unregistered card to auto-fill)</label>
+            <input id="new_uid" name="new_uid" class="mt-2 w-full rounded-lg border-slate-300 uppercase" required>
           </div>
 
           <button class="px-4 h-10 rounded-lg bg-charcoal text-white">
-            Bind
+            Replace Card
           </button>
         </form>
 
@@ -108,7 +102,6 @@ require __DIR__.'/../partials/layout_nav.php';
           <div id="tapBox" class="p-4 rounded-lg bg-white border">
             <div class="text-sm opacity-70">Waiting for card tap…</div>
           </div>
-          <div class="text-xs mt-2 opacity-70">Only unregistered cards will auto-fill the UID field.</div>
         </div>
       </div>
     </div>
@@ -117,10 +110,13 @@ require __DIR__.'/../partials/layout_nav.php';
 
 <script>
 const DEVICE='DEV001';
-const tapBox = document.getElementById('tapBox');
-const uidInp = document.getElementById('uid');
-let lastTs = 0, lastId = 0;
+const tapBox=document.getElementById('tapBox');
+const newUID=document.getElementById('new_uid');
+const empSel=document.getElementById('emp');
+const curUID=document.getElementById('curUID');
+empSel.addEventListener('change', ()=> curUID.textContent = empSel.selectedOptions[0]?.dataset.cur || '—');
 
+let lastTs=0,lastId=0;
 function pill(t,cls){ return `<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${cls} border">${t}</span>`; }
 
 async function poll(){
@@ -133,8 +129,7 @@ async function poll(){
         const when=j.ts?new Date(j.ts*1000).toLocaleString():'—';
 
         if (j.registered==0) {
-          // unregistered: auto-fill
-          uidInp.value = j.rfid_uid.toUpperCase();
+          newUID.value = j.rfid_uid.toUpperCase();
           tapBox.innerHTML = `
             <div class="flex items-center justify-between">
               <div>
@@ -157,7 +152,7 @@ async function poll(){
       }
     }
   }catch(_){}
-  setTimeout(poll, 800);
+  setTimeout(poll,800);
 }
 poll();
 </script>
