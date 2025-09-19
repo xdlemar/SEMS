@@ -60,7 +60,7 @@ $next = date('Y-m', strtotime('+1 month', $dt0));
                 <td class="px-4 py-2">₱<?= number_format($p['gross_pay'],2) ?></td>
                 <td class="px-4 py-2 font-medium">₱<?= number_format($p['net_pay'],2) ?></td>
                 <td class="px-4 py-2">
-                  <a class="px-3 h-9 grid place-items-center rounded-lg border"
+                  <a class="px-3 h-9 grid place-items-center rounded-lg border bg-blue-500 text-white"
                      href="/sems/public/payslip.php?id=<?= (int)$p['id'] ?>" target="_blank">View / Print</a>
                 </td>
               </tr>

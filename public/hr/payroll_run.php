@@ -153,7 +153,7 @@ require __DIR__.'/../partials/layout_nav.php';
               <td class="px-4 py-2"><?=$r['period_end']?></td>
               <td class="px-4 py-2"><?=$r['created_at']?></td>
               <td class="px-4 py-2">
-                <a class="px-3 h-9 grid place-items-center rounded-lg border" href="/sems/public/hr/run_detail.php?run_id=<?=$r['id']?>">Open</a>
+                <a class="px-3 h-9 grid place-items-center rounded-lg border bg-blue-500 text-white" href="/sems/public/hr/run_detail.php?run_id=<?=$r['id']?>">Open</a>
               </td>
             </tr>
           <?php endforeach; ?>

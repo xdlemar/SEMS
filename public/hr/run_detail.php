@@ -32,7 +32,10 @@ $rows = $rows->fetchAll(PDO::FETCH_ASSOC);
     </div>
     <div class="flex gap-2">
       <a href="/sems/public/hr/payroll_run.php" class="px-3 h-10 grid place-items-center rounded-lg border">Back</a>
-      <button onclick="window.print()" class="px-3 h-10 rounded-lg bg-charcoal text-white">Print Summary</button>
+      <a class="px-3 h-10 grid place-items-center rounded-lg bg-charcoal text-white" href="/sems/public/hr/run_print.php?run_id=<?= (int)$run_id ?>"
+   href="/sems/public/hr/run_print.php?run_id=<?= (int)$run_id ?>"
+   target="_blank">Print Summary</a>
+
     </div>
   </div>
 
@@ -61,7 +64,7 @@ $rows = $rows->fetchAll(PDO::FETCH_ASSOC);
             <td class="px-4 py-2">₱<?= number_format($r['gross_pay'],2); ?></td>
             <td class="px-4 py-2 font-medium">₱<?= number_format($r['net_pay'],2); ?></td>
             <td class="px-4 py-2">
-              <a class="px-3 h-9 grid place-items-center rounded-lg border"
+              <a class="px-3 h-9 grid place-items-center rounded-lg border bg-blue-500 text-white"
                  href="/sems/public/hr/payslip_view.php?run_id=<?= $run_id; ?>&emp_id=<?= (int)$r['employee_id']; ?>" target="_blank">
                 View / Print
               </a>

@@ -52,7 +52,7 @@ $page_title='Payslip · '.$p['emp_no'];
           <div class="muted">Payslip</div>
         </div>
         <div class="btns">
-          <a class="btn" href="javascript:history.back()">Back</a>
+          <a class="btn" href="/sems/public/hr/payroll_run.php">Back</a>
           <button class="btn primary" onclick="window.print()">Print</button>
         </div>
       </div>
