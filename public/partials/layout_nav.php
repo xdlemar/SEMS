@@ -18,29 +18,26 @@ $cards_paths = [
 ];
 $cards_open = any_active($cards_paths);
 
-// Build sections
 $sections = [];
 if (($u['role'] ?? '') === 'ADMIN') {
   $sections[] = ['label'=>'Admin','items'=>[
+    ['Dashboard','/sems/public/admin/dashboard.php','dashboard'],
     ['Users','/sems/public/admin/users.php','manage_accounts'],
-  
+
   ]];
 }
+
 if (($u['role'] ?? '') === 'HR' || ($u['role'] ?? '') === 'ADMIN') {
   $sections[] = ['label'=>'HR','items'=>[
+     ['Dashboard','/sems/public/hr/dashboard.php','dashboard'],
     ['Employees','/sems/public/admin/employees.php','group'],
     ['Employee Portal Users','/sems/public/hr/users.php','manage_accounts'],
     ['Approvals','/sems/public/hr/approvals.php','assignment_turned_in'],
     ['Payroll','/sems/public/hr/payroll_run.php','payments'],
     ['Attendance History','/sems/public/hr/attendance_history.php','history'],
- 
   ]];
 }
-if (($u['role'] ?? '') === 'MANAGER') {
-  $sections[] = ['label'=>'Manager','items'=>[
-    ['Dashboard','/sems/public/manager/dashboard.php','insights'],
-  ]];
-}
+
 if (($u['role'] ?? '') === 'EMPLOYEE') {
   $sections[] = ['label'=>'Employee','items'=>[
     ['Dashboard','/sems/public/employee/dashboard.php','dashboard'],
@@ -52,8 +49,32 @@ $sections[] = ['label'=>'Profile','items'=>[
   ['Profile Details','/sems/public/employee/profile.php','storefront']
 ]];
 ?>
-<!-- Small styles just for the collapsible menu affordances -->
 <style>
+  .sb-head{
+    display:flex !important; align-items:center; gap:.75rem;
+    padding:.9rem .9rem; border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .sb-head img{width:34px;height:34px;border-radius:.5rem;object-fit:contain}
+  #overlay{position:fixed; inset:0; background:rgba(2,6,23,.6);
+    display:none; opacity:1; pointer-events:none; z-index:60;}
+  #overlay.show{display:block; pointer-events:auto;}
+
+  .menu{ position:relative; }
+  .menu-btn{
+    display:flex; align-items:center; gap:.5rem;
+    padding:.42rem .6rem; border-radius:.6rem;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+    cursor:pointer;
+  }
+  .menu-items{
+    position:absolute; right:0; top:calc(100% + .4rem);
+    min-width:180px; padding:.4rem; border-radius:.6rem;
+    background:#0b1324; border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 12px 30px rgba(0,0,0,.45);
+    display:none; z-index:70; /* above overlay */
+  }
+  .menu.open .menu-items{ display:block; }
+
   .sb ul li.has-children > .parent {
     display:flex; align-items:center; gap:.5rem; width:100%;
     padding:.5rem .75rem; border-radius:.5rem; cursor:pointer;
@@ -88,7 +109,7 @@ $sections[] = ['label'=>'Profile','items'=>[
       <?php endforeach; ?>
 
       <?php if ($section['label']==='HR'): ?>
-        <!-- Cards dropdown -->
+      
         <li class="has-children <?= $cards_open ? 'open' : '' ?>">
           <button class="parent" type="button">
             <span class="ms">credit_card</span>
@@ -125,7 +146,7 @@ $sections[] = ['label'=>'Profile','items'=>[
   </button>
   <div style="font-weight:600"><?= htmlspecialchars($page_title) ?></div>
 
-  <!-- Account menu (icon only, no name) -->
+ 
   <div class="menu" id="profileMenu">
     <button class="menu-btn" type="button" title="Account" aria-label="Account">
       <span class="material-symbols-outlined">account_circle</span>
@@ -143,27 +164,16 @@ $sections[] = ['label'=>'Profile','items'=>[
 <div id="main"><div class="container">
 
 <script>
-// Sidebar show/hide (mobile)
-document.getElementById('toggle')?.addEventListener('click', ()=> {
-  document.getElementById('sb')?.classList.toggle('open');
-  document.getElementById('overlay')?.classList.toggle('show');
-});
-document.getElementById('overlay')?.addEventListener('click', ()=> {
-  document.getElementById('sb')?.classList.remove('open');
-  document.getElementById('overlay')?.classList.remove('show');
-});
-
-// Cards submenu toggle
 document.querySelectorAll('.sb li.has-children > .parent').forEach(btn=>{
   btn.addEventListener('click', ()=>{
-    const li = btn.parentElement;
-    li.classList.toggle('open');
+    btn.parentElement.classList.toggle('open');
   });
 });
 
-// Profile menu
+
 const pm = document.getElementById('profileMenu');
-pm?.querySelector('.menu-btn')?.addEventListener('click', ()=>{
+pm?.querySelector('.menu-btn')?.addEventListener('click', (e)=>{
+  e.stopPropagation();
   pm.classList.toggle('open');
 });
 document.addEventListener('click', (e)=>{

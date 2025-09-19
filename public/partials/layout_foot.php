@@ -7,38 +7,44 @@
   const overlay = document.getElementById('overlay');
   const btn = document.getElementById('toggle');
   const mq = window.matchMedia('(min-width: 992px)');
-  const menu = document.getElementById('profileMenu');
   const STORAGE_KEY = 'sems_sb_open';
 
   let open = (localStorage.getItem(STORAGE_KEY) ?? '1') === '1';
   const isDesktop = () => mq.matches;
 
+  function hideOverlayHard(){
+    overlay.classList.remove('show');
+    overlay.style.display = 'none';
+    overlay.style.pointerEvents = 'none';
+  }
+  function showOverlay(){
+    overlay.classList.add('show');
+    overlay.style.display = 'block';
+    overlay.style.pointerEvents = 'auto';
+  }
+
   function render(){
     if (isDesktop()){
       document.body.classList.toggle('with-sb', open);
       sb.classList.toggle('open', open);
-      overlay.classList.remove('show');
+      hideOverlayHard();                 // <- never show overlay on desktop
     } else {
       document.body.classList.remove('with-sb');
       sb.classList.toggle('open', open);
-      overlay.classList.toggle('show', open);
+      if (open) showOverlay(); else hideOverlayHard();
     }
   }
+
   render();
 
   btn?.addEventListener('click', () => {
     open = !open;
     if (isDesktop()) localStorage.setItem(STORAGE_KEY, open ? '1' : '0');
-    render();
+    render();                            // <- final authority on overlay state
   });
 
   overlay.addEventListener('click', () => { open = false; render(); });
   mq.addEventListener('change', render);
-
-  // Profile dropdown
-  const btnMenu = menu?.querySelector('.menu-btn');
-  btnMenu?.addEventListener('click', (e)=>{ e.stopPropagation(); menu.classList.toggle('open'); });
-  document.addEventListener('click', ()=> menu?.classList.remove('open'));
 })();
 </script>
 </body>

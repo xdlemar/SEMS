@@ -23,7 +23,7 @@ $rows=$q->fetchAll(PDO::FETCH_ASSOC);
       <input id="q" placeholder="Search name / emp # / position"
              class="rounded-lg border-slate-300 w-64 px-3 h-10">
       <a href="/sems/public/admin/employee_form.php"
-         class="px-3 h-10 rounded-lg bg-charcoal text-white grid place-items-center">Add Employee</a>
+         class="px-3 h-10 rounded-lg bg-charcoal text-white grid place-items-center">Add</a>
     </div>
   </div>
 
